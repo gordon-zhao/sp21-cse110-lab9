@@ -24,6 +24,14 @@
       width: 240px;
     }
   </style>
+
+  <script src="https://cdn.trackjs.com/agent/v3/latest/t.js"></script>
+  <script>
+    window.TrackJS && TrackJS.install({ 
+      token: "23355cdd7b924b3898cacbd0974c4fb7"
+      // for more configuration options, see https://docs.trackjs.com
+    });
+  </script>
 </head>
 <body>
   <fieldset>
@@ -42,17 +50,31 @@
   </fieldset>
 
   <section id="error-btns">
-    <button>Console Log Demo</button>
-    <button>Console Error Demo</button>
-    <button>Console Dir</button>
-    <button>Console dirxml</button>
-    <button>Console Group Start</button>
-    <button>Console Group End</button>
-    <button>Console Table</button>
-    <button>Start Timer</button>
-    <button>End Timer</button>
-    <button>Console Trace</button>
-    <button>Trigger a Global Error</button>
+    <button onclick="console.log('Console Log Demo')">Console Log Demo</button>
+    <button onclick="console.error('Console Error Demo')">Console Error Demo</button>
+    <button onclick="console.dir(document)">Console Dir</button>
+    <button onclick="console.dirxml(document)">Console dirxml</button>
+    <button onclick="console.group('Console Group Start Demo')">Console Group Start</button>
+    <button onclick="console.groupEnd('Console Group Start Demo')">Console Group End</button>
+    <button onclick="console.table([
+      {
+        first: 'René',
+        last: 'Magritte',
+      },
+      {
+        first: 'Chaim',
+        last: 'Soutine',
+        birthday: '18930113',
+      },
+      {
+        first: 'Henri',
+        last: 'Matisse',
+      }
+    ])">Console Table</button>
+    <button onclick="console.time()">Start Timer</button>
+    <button onclick="console.timeEnd()">End Timer</button>
+    <button onclick="(() => (() => (() => console.trace())())())()">Console Trace</button>
+    <button onclick="throw new CustomError('Bruh!')">Trigger a Global Error</button>
   </section>
 
   <script>
@@ -62,11 +84,63 @@
       let firstNum = document.querySelector('#first-num').value;
       let secondNum = document.querySelector('#second-num').value;
       let operator = document.querySelector('#operator').value;
-      output.innerHTML = eval(`${firstNum} ${operator} ${secondNum}`);
+      output.innerHTML = "Result: ";
+      let result = 0;
+      if (operator === "/" && secondNum == 0) {
+        throw new DivideByZeroError("Cannot divide by zero!");
+      }
+      try {
+        result = eval(`${firstNum} ${operator} ${secondNum}`);
+      }
+      catch (err) {
+        if (err instanceof SyntaxError) {
+          result = 0;
+          throw new EmptyInputError("No number is given!");
+        }
+        else {
+          throw new CalculatorError(err);
+        }
+      }
+      finally {
+        output.innerHTML += result;
+      }
     });
 
     let errorBtns = Array.from(document.querySelectorAll('#error-btns > button'));
     // TODO - Make buttons functional
+    class CustomError extends Error {
+      constructor(msg) {
+        super(msg);
+        this.name = "Custom Error";
+      }
+    }
+
+    class CalculatorError extends Error {
+      constructor(msg) {
+        console.log("Something went wrong in the calculator!");
+        super(msg);
+      }
+    }
+
+    class DivideByZeroError extends CalculatorError {
+      constructor(msg) {
+        super(msg);
+        this.name = 'DevideByZeroError'
+      }
+    }
+
+    class EmptyInputError extends CalculatorError {
+      constructor(msg) {
+        super(msg);
+        this.name = 'EmptyInputError';
+      }
+    }
+    
+    // Handoff the window.onerror
+    window.onerror = function(errMsg, url, lineNum) { 
+      console.log("What's wrong?\n" + errMsg + " at " + url + ":" +lineNum);
+      TrackJS.track(errMsg + " at " + url + ":" +lineNum);
+    }
   </script>
 </body>
 </html>
